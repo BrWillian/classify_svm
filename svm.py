@@ -3,13 +3,15 @@ import os
 import cv2
 import numpy as np
 from sklearn.svm import SVC
+import shutil
 import _pickle as pickle
 
 
 def read_files(directory):
-    print("Reading files...")
+    print("Reading images...")
     feature_list = list()
     label_list = list()
+    img_path = list()
     num_classes = 0
     for root, dirs, files in os.walk(directory):
         for d in dirs:
@@ -18,9 +20,10 @@ def read_files(directory):
             for image in images:
                 label_list.append(d)
                 feature_list.append(extract_feature(root + d + "/" + image))
+                img_path.append(root + d + "/" + image)
 
     print(str(num_classes) + " classes")
-    return np.asarray(feature_list), np.asarray(label_list)
+    return np.asarray(feature_list), np.asarray(label_list), np.asarray(img_path)
 
 
 def extract_feature(image_file):
@@ -34,16 +37,16 @@ def extract_feature(image_file):
 def train(directory):
 
     # gerar duas arrays com features e classes
-    feature_array, label_array = read_files(directory)
+    feature_array, label_array, img_path = read_files(directory)
 
     # checar modelo
     if os.path.isfile("svm_model.pkl"):
-        print("Using model")
+        print("Using model...")
     else:
         print("Train....")
 
         # Caso nao tenha nenhum modelo cria um novo modelo
-        svm = SVC()
+        svm = SVC(gamma='auto')
         svm.fit(feature_array, label_array)
 
         print("Saving model...")
@@ -56,19 +59,29 @@ def classify(directory):
     svm = pickle.load(open("svm_model.pkl", "rb"))
 
     # extraio features das imagens a serem classificadas
-    feature_array, label_array = read_files(directory)
+    feature_array, label_array, img_path = read_files(directory)
 
-
-    # calculo a taxa de acerto
+    # verifica classificação
     right = 0
     total = 0
-    for x, y in zip(feature_array, label_array):
+    for x, y, z in zip(feature_array, label_array, img_path):
         x = x.reshape(1, -1)
         prediction = svm.predict(x)[0]
 
-        if y == prediction:
-            right += 1
+        if 'day' == prediction:
+            try:
+                shutil.move(z, 'day')
+            except:
+                pass
+            right +=1
+        elif 'night' == prediction:
+            try:
+                shutil.move(z, 'night')
+            except:
+                pass
+            right +=1
         total += 1
+
 
     accuracy = float(right) / float(total) * 100
     print(str(accuracy) + "% acuracia")
