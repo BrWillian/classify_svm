@@ -28,7 +28,7 @@ def read_files(directory):
 
 def extract_feature(image_file):
     img = cv2.imread(image_file)
-    img = cv2.resize(img, (30,30), interpolation=cv2.INTER_CUBIC)
+    img = cv2.resize(img, (32,32), interpolation=cv2.INTER_CUBIC)
     img = img.flatten()
     img = img / np.mean(img)
     return img
@@ -46,7 +46,7 @@ def train(directory):
         print("Train....")
 
         # Caso nao tenha nenhum modelo cria um novo modelo
-        svm = SVC(gamma='auto')
+        svm = SVC()
         svm.fit(feature_array, label_array)
 
         print("Saving model...")
@@ -68,23 +68,13 @@ def classify(directory):
         x = x.reshape(1, -1)
         prediction = svm.predict(x)[0]
 
-        if 'day' == prediction:
-            try:
-                shutil.move(z, 'day')
-            except:
-                pass
-            right +=1
-        elif 'night' == prediction:
-            try:
-                shutil.move(z, 'night')
-            except:
-                pass
-            right +=1
+        if y == prediction:
+            right += 1
+        shutil.move(z, prediction)
         total += 1
 
-
     accuracy = float(right) / float(total) * 100
-    print(str(accuracy) + "% acuracia")
+    print(str(accuracy) + "% accuracy")
 
 
 
